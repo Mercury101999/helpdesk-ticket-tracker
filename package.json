@@ -25,6 +25,7 @@
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
     "@types/react": "~19.3.0",
     "typescript": "~6.0.3"
   },
@@ -32,7 +33,10 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "export:web": "expo export -p web",
+    "typecheck": "tsc --noEmit",
+    "verify:db": "node scripts/verify-db.mjs"
   },
   "private": true
 }

@@ -79,7 +79,7 @@ create trigger tickets_touch before update on public.tickets
 create or replace function public.guard_ticket_fields()
 returns trigger language plpgsql as $$
 begin
-  if not public.is_staff() then
+  if auth.uid() is not null and not public.is_staff() then
     if new.status is distinct from old.status
        or new.assignee_id is distinct from old.assignee_id
        or new.priority is distinct from old.priority
@@ -97,7 +97,8 @@ create trigger tickets_guard before update on public.tickets
 create or replace function public.guard_profile_role()
 returns trigger language plpgsql as $$
 begin
-  if new.role is distinct from old.role and not public.is_admin() then
+  -- auth.uid() is null for trusted server-side contexts (service role, SQL editor, seed scripts).
+  if new.role is distinct from old.role and auth.uid() is not null and not public.is_admin() then
     raise exception 'Only admins can change roles';
   end if;
   return new;
