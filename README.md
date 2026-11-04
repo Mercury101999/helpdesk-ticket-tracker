@@ -1,6 +1,8 @@
 # IT Help Desk Ticket Tracker
 
-[![CI](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/ci.yml)
+**[▶ Try the live demo](https://mercury101999.github.io/helpdesk-ticket-tracker/)**: no sign-up needed. Pick Requester, Technician or Admin on the sign-in screen.
+
+[![CI](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/ci.yml) [![Deploy](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/deploy-pages.yml)
 
 A cross-platform (iOS / Android / web) help desk app where employees submit IT support tickets and technicians triage, assign and resolve them. Built with **React Native + Expo Router + TypeScript** on a **Supabase** (Postgres, Auth, Row Level Security) backend.
 
@@ -138,6 +140,14 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 - **Screen tests** (React Native Testing Library) render the sign-in, ticket list and new-ticket screens: role-based visibility, status filtering, validation errors and successful submission.
 - **CI** (GitHub Actions, every push/PR): `npm ci` → typecheck → lint → Jest → Supabase migration + RLS smoke test → web export → iOS and Android bundle exports.
 
+## Deployment
+
+Every push to `main` builds the web app and publishes it to GitHub Pages (`.github/workflows/deploy-pages.yml`):
+
+- Sets Expo Router's `experiments.baseUrl` to `/helpdesk-ticket-tracker` at build time, so local dev is unchanged.
+- Copies `index.html` to `404.html` so deep links like `/ticket/1041` load the single-page app.
+- The public demo is built **without** Supabase env vars, so it always runs in Demo Mode with a visible banner. Visitors can't create accounts or data in the real database, and the build step fails if a project URL or API key ever ends up in the bundle.
+
 ## Roadmap
 
 - [x] Milestone 1: schema + RLS, auth, ticket list/detail/create, comments, demo mode, web build
@@ -148,7 +158,9 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 - [ ] Admin dashboard: tickets by category, mean time to resolve
 - [x] Milestone 2: Jest + RNTL tests, ESLint, GitHub Actions CI, verified iOS/Android bundle exports
 - [x] Milestone 3: hosted Supabase project, advisor-driven security/performance hardening, live RLS verification and end-to-end sign-up → ticket → technician resolution against the real backend
-- [ ] Deploy the web build (e.g. GitHub Pages / Vercel) and an EAS preview build
+- [x] Milestone 4: public web demo on GitHub Pages, deployed automatically from `main`
+- [ ] EAS preview build for iOS/Android
+- [ ] Optional live-backend mode on the public site (publishable key via Actions variables, sign-up rate limits, CAPTCHA)
 
 ## License
 
