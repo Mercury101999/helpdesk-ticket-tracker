@@ -1,56 +1,45 @@
-import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { DefaultTheme, Redirect, Stack, ThemeProvider, useSegments } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { DemoBanner } from '@/components/ui';
+import { DataProvider, useData } from '@/lib/DataProvider';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  anchor: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+export { ErrorBoundary } from 'expo-router';
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
-  return <RootLayoutNav />;
+  return (
+    <DataProvider>
+      <ThemeProvider value={DefaultTheme}>
+        <RootNav />
+      </ThemeProvider>
+    </DataProvider>
+  );
 }
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+function RootNav() {
+  const { user, loading, demoMode } = useData();
+  const segments = useSegments();
+  const inAuth = segments[0] === '(auth)';
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+  // Simple auth gate: signed-out users go to sign-in, signed-in users skip it.
+  if (!user && !inAuth) return <Redirect href="/sign-in" />;
+  if (user && inAuth) return <Redirect href="/" />;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <View style={{ flex: 1 }}>
+      {demoMode && <DemoBanner />}
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="ticket/[id]" options={{ title: 'Ticket' }} />
       </Stack>
-    </ThemeProvider>
+    </View>
   );
 }
