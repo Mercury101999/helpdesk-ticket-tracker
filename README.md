@@ -1,5 +1,7 @@
 # IT Help Desk Ticket Tracker
 
+[![CI](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Mercury101999/helpdesk-ticket-tracker/actions/workflows/ci.yml)
+
 A cross-platform (iOS / Android / web) help desk app where employees submit IT support tickets and technicians triage, assign and resolve them. Built with **React Native + Expo Router + TypeScript** on a **Supabase** (Postgres, Auth, Row Level Security) backend.
 
 > **Runs without a backend.** If no Supabase keys are configured, the app starts in a clearly labeled **Demo Mode** with local mock data, so you can try every screen in seconds.
@@ -32,7 +34,7 @@ Help desks live and die by their ticket queue. This project models a real one en
 | Language | TypeScript (strict) |
 | Backend | Supabase: Postgres, Auth, Row Level Security, triggers |
 | Web | react-native-web, static SPA export (`expo export -p web`) |
-| Tooling | `tsc --noEmit`, PGlite (in-memory Postgres) RLS smoke test, Playwright for screenshots |
+| Quality | Jest + React Native Testing Library (36 tests), ESLint (eslint-config-expo), `tsc --noEmit`, PGlite (in-memory Postgres) RLS smoke test, GitHub Actions CI, Playwright screenshots |
 
 ## Architecture
 
@@ -50,11 +52,14 @@ lib/
   DataProvider.tsx      Single data layer: Supabase OR mock data behind one API
   supabase.ts           Client from EXPO_PUBLIC_SUPABASE_* env vars, DEMO_MODE flag
   mockData.ts           Demo users, tickets, comments
+  tickets.ts            Pure ticket logic: sort, filter, RLS mirror, status transitions
   types.ts, validation.ts, format.ts
 supabase/
   migrations/…_init_helpdesk.sql   Schema, triggers, RLS policies
   seed.sql                          Demo users/tickets for `supabase db reset`
 scripts/verify-db.mjs   Runs the migration + seed and checks RLS in in-memory Postgres
+__tests__/              Jest suites: validation, ticket logic, data provider, screens
+.github/workflows/ci.yml  CI pipeline
 ```
 
 Screens never talk to Supabase directly; they call `useData()` (`createTicket`, `updateTicket`, `addComment`, …). That keeps UI code backend-agnostic and is what makes Demo Mode possible.
@@ -115,8 +120,16 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 | --- | --- |
 | `npm run web` | Dev server for web |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
+| `npm test` | Jest unit + screen tests |
 | `npm run export:web` | Production web build to `dist/` |
 | `npm run verify:db` | Migration + RLS smoke test (in-memory Postgres) |
+
+## Testing & CI
+
+- **Unit tests** cover form validation, ticket sorting/filtering, the client-side RLS mirror, status transitions (`resolved_at` handling) and the demo data provider (create, assign, resolve, comment, sign out).
+- **Screen tests** (React Native Testing Library) render the sign-in, ticket list and new-ticket screens: role-based visibility, status filtering, validation errors and successful submission.
+- **CI** (GitHub Actions, every push/PR): `npm ci` → typecheck → lint → Jest → Supabase migration + RLS smoke test → web export → iOS and Android bundle exports.
 
 ## Roadmap
 
@@ -126,7 +139,8 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 - [ ] Asset inventory (link tickets to devices / asset tags)
 - [ ] Attachments (screenshots) via Supabase Storage
 - [ ] Admin dashboard: tickets by category, mean time to resolve
-- [ ] Unit tests (Jest) and CI with GitHub Actions; deploy web build
+- [x] Milestone 2: Jest + RNTL tests, ESLint, GitHub Actions CI, verified iOS/Android bundle exports
+- [ ] Deploy the web build (e.g. GitHub Pages / Vercel) and an EAS preview build
 
 ## License
 
