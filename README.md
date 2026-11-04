@@ -56,6 +56,7 @@ lib/
   types.ts, validation.ts, format.ts
 supabase/
   migrations/…_init_helpdesk.sql   Schema, triggers, RLS policies
+  migrations/…_security_performance_hardening.sql  Advisor fixes: private helpers, search_path, RLS initplan, merged policies
   seed.sql                          Demo users/tickets for `supabase db reset`
 scripts/verify-db.mjs   Runs the migration + seed and checks RLS in in-memory Postgres
 __tests__/              Jest suites: validation, ticket logic, data provider, screens
@@ -91,7 +92,9 @@ RLS is enabled on every table, so permissions hold even if someone calls the API
 | Admin | read all, change roles | everything technicians can + delete | + delete any comment |
 
 Implementation notes:
-- `is_staff()` / `is_admin()` are `SECURITY DEFINER` helpers so policies can check the caller's role without recursive RLS on `profiles`.
+- `private.is_staff()` / `private.is_admin()` are `SECURITY DEFINER` helpers so policies can check the caller's role without recursive RLS on `profiles`. They live in a non-exposed `private` schema, so they can't be called through the REST API.
+- Policies wrap `auth.uid()` and the helpers in `(select …)` so Postgres evaluates them once per query instead of once per row, and each table has a single UPDATE policy.
+- Trigger functions pin `search_path` and are not executable by the `anon`/`authenticated` API roles. Supabase's security advisor reports no findings for this schema.
 - Column-level rules RLS can't express (requesters may not change status/assignee/priority; non-admins may not change roles) are enforced by `BEFORE UPDATE` triggers.
 - `npm run verify:db` loads the migration and seed into an in-memory Postgres and asserts that a requester sees only their own tickets, cannot change status, cannot self-promote and cannot create tickets for someone else, and that a technician can resolve and assign.
 
@@ -109,10 +112,11 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 ### Connect a real Supabase project
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Run `supabase/migrations/*.sql` in the SQL editor (or `supabase link` + `supabase db push`). For local dev, `supabase start && supabase db reset` also applies `seed.sql` (demo users, password `Password123!`).
-3. `cp .env.example .env` and fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
-4. Restart `npx expo start`. The demo banner disappears and data comes from Postgres.
-5. Promote a user: `update profiles set role = 'technician' where email = '…';`
+2. Apply **both** files in `supabase/migrations/` in order (SQL editor, or `supabase link` + `supabase db push`). `seed.sql` writes demo users straight into `auth.users`, so use it **only for a local stack** (`supabase start && supabase db reset`, password `Password123!`), never on a hosted project.
+3. `cp .env.example .env` and fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API Keys). The **publishable** key (`sb_publishable_…`) is recommended; the legacy `anon` JWT also works. Never put the `service_role`/secret key in the app.
+4. Auth → Sign In / Providers → Email: either keep **Confirm email** on and configure custom SMTP (Supabase's built-in mailer only delivers to your team's addresses), or turn it off for a demo project so new sign-ups can log in immediately.
+5. Restart `npx expo start`. The demo banner disappears and data comes from Postgres.
+6. Promote a user: `update profiles set role = 'technician' where email = '…';`
 
 ### Scripts
 
@@ -140,6 +144,7 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 - [ ] Attachments (screenshots) via Supabase Storage
 - [ ] Admin dashboard: tickets by category, mean time to resolve
 - [x] Milestone 2: Jest + RNTL tests, ESLint, GitHub Actions CI, verified iOS/Android bundle exports
+- [x] Milestone 3: hosted Supabase project, advisor-driven security/performance hardening, live RLS verification
 - [ ] Deploy the web build (e.g. GitHub Pages / Vercel) and an EAS preview build
 
 ## License
