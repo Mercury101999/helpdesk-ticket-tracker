@@ -40,12 +40,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return user.role === 'requester' ? allTickets.filter((t) => t.requester_id === user.id) : allTickets;
   }, [allTickets, user]);
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase!.from('profiles').select('*').eq('id', userId).single();
-    if (error) throw error;
-    setUser(data as Profile);
-  }, []);
-
   const refresh = useCallback(async () => {
     if (DEMO_MODE || !supabase) return;
     const [t, p] = await Promise.all([
@@ -56,6 +50,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setAllTickets(t.data as Ticket[]);
     if (!p.error) setProfiles(p.data as Profile[]);
   }, []);
+
+  const loadProfile = useCallback(async (userId: string) => {
+    const { data, error } = await supabase!.from('profiles').select('*').eq('id', userId).single();
+    if (error) throw error;
+    setUser(data as Profile);
+    await refresh();
+  }, [refresh]);
 
   useEffect(() => {
     if (DEMO_MODE || !supabase) return;
@@ -69,10 +70,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);
-
-  useEffect(() => {
-    if (user) refresh().catch(() => undefined);
-  }, [user, refresh]);
 
   const value: DataContextValue = {
     demoMode: DEMO_MODE,
