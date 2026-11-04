@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Badge, C, Chip, PRIORITY_COLORS, s, STATUS_COLORS } from '@/components/ui';
 import { useData } from '@/lib/DataProvider';
@@ -63,7 +63,7 @@ export default function TicketList() {
         ListEmptyComponent={<Text style={[s.muted, { textAlign: 'center', marginTop: 32 }]}>No tickets match these filters.</Text>}
         renderItem={({ item: t }) => (
           <Link href={{ pathname: '/ticket/[id]', params: { id: String(t.id) } }} asChild>
-            <Pressable style={({ pressed }) => [s.card, { opacity: pressed ? 0.85 : 1, borderLeftWidth: 4, borderLeftColor: PRIORITY_COLORS[t.priority] }]}>
+            <Pressable style={StyleSheet.flatten([s.card, { borderLeftWidth: 4, borderLeftColor: PRIORITY_COLORS[t.priority] }])}>
               <View style={[s.row, { justifyContent: 'space-between' }]}>
                 <Text style={s.muted}>#{t.id} · {label(t.category)}</Text>
                 <Text style={s.muted}>{timeAgo(t.created_at)}</Text>
