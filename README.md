@@ -13,6 +13,9 @@ A cross-platform (iOS / Android / web) help desk app where employees submit IT s
   <img src="docs/screenshots/04-new-ticket-validation.png" width="200" alt="New ticket form with validation" />
 </p>
 
+<p><img src="docs/screenshots/05-live-supabase-technician.png" width="200" alt="Live Supabase backend: technician resolving a ticket" /><br/>
+<em>Running against a hosted Supabase project (no demo banner): a test ticket assigned, commented on and resolved by a technician.</em></p>
+
 ## Why
 
 Help desks live and die by their ticket queue. This project models a real one end to end: intake (categorized, prioritized tickets), triage (status workflow, assignment), communication (comment threads) and **access control enforced in the database**, not just the UI.
@@ -116,7 +119,7 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 3. `cp .env.example .env` and fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API Keys). The **publishable** key (`sb_publishable_…`) is recommended; the legacy `anon` JWT also works. Never put the `service_role`/secret key in the app.
 4. Auth → Sign In / Providers → Email: either keep **Confirm email** on and configure custom SMTP (Supabase's built-in mailer only delivers to your team's addresses), or turn it off for a demo project so new sign-ups can log in immediately.
 5. Restart `npx expo start`. The demo banner disappears and data comes from Postgres.
-6. Promote a user: `update profiles set role = 'technician' where email = '…';`
+6. Promote a user (SQL editor): `update profiles set role = 'technician' where lower(email) = lower('…');` (Auth stores emails in lowercase.)
 
 ### Scripts
 
@@ -144,7 +147,7 @@ With no `.env`, the app opens in **Demo Mode**. Pick Requester, Technician or Ad
 - [ ] Attachments (screenshots) via Supabase Storage
 - [ ] Admin dashboard: tickets by category, mean time to resolve
 - [x] Milestone 2: Jest + RNTL tests, ESLint, GitHub Actions CI, verified iOS/Android bundle exports
-- [x] Milestone 3: hosted Supabase project, advisor-driven security/performance hardening, live RLS verification
+- [x] Milestone 3: hosted Supabase project, advisor-driven security/performance hardening, live RLS verification and end-to-end sign-up → ticket → technician resolution against the real backend
 - [ ] Deploy the web build (e.g. GitHub Pages / Vercel) and an EAS preview build
 
 ## License
