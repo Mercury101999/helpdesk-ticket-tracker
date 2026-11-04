@@ -1,0 +1,61 @@
+name: Deploy web demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Pages serves the site from /<repo>/, so Expo Router needs a matching baseUrl.
+      - name: Set Expo Router baseUrl
+        run: |
+          node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('app.json'));j.expo.experiments={...j.expo.experiments,baseUrl:'/${{ github.event.repository.name }}'};fs.writeFileSync('app.json',JSON.stringify(j,null,2))"
+
+      # The public demo intentionally ships WITHOUT Supabase env vars, so it runs in
+      # Demo Mode (mock data, clear banner). No keys of any kind are embedded.
+      - name: Export web build (demo mode)
+        run: npx expo export -p web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ''
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ''
+
+      - name: SPA fallback + disable Jekyll
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+          if grep -rqE "https://[a-z]{20}\.supabase\.co|sb_(publishable|secret)_[A-Za-z0-9_-]{10}|eyJhbGciOi" dist; then echo "Project URL or key found in public build" && exit 1; fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
