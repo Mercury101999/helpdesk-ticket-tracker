@@ -2,7 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import { MOCK_COMMENTS, MOCK_PROFILES, MOCK_TICKETS } from './mockData';
 import { DEMO_MODE, supabase } from './supabase';
-import { NewTicketInput, Profile, Role, Status, Ticket, TicketComment } from './types';
+import { applyTicketPatch, visibleTicketsFor } from './tickets';
+import { NewTicketInput, Profile, Role, Ticket, TicketComment } from './types';
 
 /**
  * Single data layer for the app. In DEMO_MODE everything lives in React state (mock data);
@@ -36,8 +37,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // In demo mode, emulate the RLS rule "requesters only see their own tickets".
   const tickets = useMemo(() => {
-    if (!DEMO_MODE || !user) return allTickets;
-    return user.role === 'requester' ? allTickets.filter((t) => t.requester_id === user.id) : allTickets;
+    if (!DEMO_MODE) return allTickets;
+    return visibleTicketsFor(user, allTickets);
   }, [allTickets, user]);
 
   const refresh = useCallback(async () => {
@@ -135,16 +136,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     async updateTicket(id, patch) {
       if (DEMO_MODE) {
-        const now = new Date().toISOString();
-        setAllTickets((ts) =>
-          ts.map((t) => {
-            if (t.id !== id) return t;
-            const next = { ...t, ...patch, updated_at: now };
-            const done = (s: Status) => s === 'resolved' || s === 'closed';
-            if (patch.status) next.resolved_at = done(patch.status) ? (done(t.status) ? t.resolved_at : now) : null;
-            return next;
-          }),
-        );
+        setAllTickets((ts) => ts.map((t) => (t.id === id ? applyTicketPatch(t, patch) : t)));
         return;
       }
       const { data, error } = await supabase!.from('tickets').update(patch).eq('id', id).select().single();

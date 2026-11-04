@@ -5,9 +5,8 @@ import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { Badge, C, Chip, PRIORITY_COLORS, s, STATUS_COLORS } from '@/components/ui';
 import { useData } from '@/lib/DataProvider';
 import { timeAgo } from '@/lib/format';
+import { countByStatus, filterTickets, sortTickets } from '@/lib/tickets';
 import { isStaff, label, Priority, PRIORITIES, Status, STATUSES } from '@/lib/types';
-
-const PRIORITY_RANK: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
 
 export default function TicketList() {
   const { tickets, user, profiles } = useData();
@@ -15,16 +14,10 @@ export default function TicketList() {
   const [priority, setPriority] = useState<Priority | 'all'>('all');
 
   const visible = useMemo(
-    () =>
-      tickets
-        .filter((t) => (status === 'all' || t.status === status) && (priority === 'all' || t.priority === priority))
-        .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || b.created_at.localeCompare(a.created_at)),
+    () => sortTickets(filterTickets(tickets, status, priority)),
     [tickets, status, priority],
   );
-  const counts = useMemo(
-    () => Object.fromEntries(STATUSES.map((st) => [st, tickets.filter((t) => t.status === st).length])) as Record<Status, number>,
-    [tickets],
-  );
+  const counts = useMemo(() => countByStatus(tickets), [tickets]);
   const nameOf = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? 'Unassigned';
 
   return (
