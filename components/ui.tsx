@@ -1,107 +1,140 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import React, { forwardRef } from 'react';
+import { Pressable, Text, TextInput, TextInputProps, View, ViewStyle, type TextInputInstance } from 'react-native';
 
-import { label, Priority, Status } from '@/lib/types';
+import { label } from '@/lib/types';
+import { Palette, pressFeedback, Tone } from '@/lib/theme';
 
-export const C = {
-  bg: '#f4f6fb',
-  card: '#ffffff',
-  text: '#1b2333',
-  muted: '#6b7280',
-  border: '#e2e6ef',
-  primary: '#2563eb',
-  danger: '#dc2626',
-};
+import { useTheme } from './ThemeProvider';
 
-export const STATUS_COLORS: Record<Status, string> = {
-  open: '#2563eb',
-  in_progress: '#d97706',
-  resolved: '#16a34a',
-  closed: '#6b7280',
-};
-
-export const PRIORITY_COLORS: Record<Priority, string> = {
-  low: '#64748b',
-  medium: '#0891b2',
-  high: '#ea580c',
-  urgent: '#dc2626',
-};
-
-export function Badge({ text, color }: { text: string; color: string }) {
+export function Badge({ text, tone }: { text: string; tone: Tone }) {
+  const { s } = useTheme();
   return (
-    <View style={[s.badge, { backgroundColor: color + '1a', borderColor: color }]}>
-      <Text style={[s.badgeText, { color }]}>{label(text)}</Text>
+    <View style={[s.badge, { backgroundColor: tone.bg, borderColor: tone.solid }]}>
+      <Text style={[s.badgeText, { color: tone.fg }]}>{label(text)}</Text>
     </View>
   );
 }
 
-export function Chip({ text, active, onPress, color = C.primary }: { text: string; active: boolean; onPress: () => void; color?: string }) {
+export function Chip({
+  text,
+  active,
+  onPress,
+  tone,
+  accessibilityLabel,
+}: {
+  text: string;
+  active: boolean;
+  onPress: () => void;
+  tone?: Tone;
+  accessibilityLabel?: string;
+}) {
+  const { c, s } = useTheme();
+  const solid = tone?.solid ?? c.primary;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label(text)}
       accessibilityState={{ selected: active }}
+      aria-selected={active}
       onPress={onPress}
-      style={[s.chip, active && { backgroundColor: color, borderColor: color }]}>
-      <Text style={[s.chipText, active && { color: '#fff' }]}>{label(text)}</Text>
+      style={(state) => [s.chip, active && { backgroundColor: solid, borderColor: solid }, pressFeedback(state, c)]}>
+      <Text style={[s.chipText, active && { color: c.primaryText }]}>{label(text)}</Text>
     </Pressable>
   );
 }
 
-export function Button({ title, onPress, variant = 'primary', disabled, style }: {
-  title: string; onPress: () => void; variant?: 'primary' | 'outline' | 'danger'; disabled?: boolean; style?: ViewStyle;
+export function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  disabled,
+  style,
+  accessibilityLabel,
+}: {
+  title: string;
+  onPress: () => void;
+  variant?: 'primary' | 'outline' | 'danger';
+  disabled?: boolean;
+  style?: ViewStyle;
+  accessibilityLabel?: string;
 }) {
-  const bg = variant === 'primary' ? C.primary : variant === 'danger' ? C.danger : 'transparent';
+  const { c, s } = useTheme();
+  const backgroundColor = disabled ? c.disabledBg : variant === 'primary' ? c.primary : variant === 'danger' ? c.dangerSolid : 'transparent';
+  const color = disabled ? c.disabledText : variant === 'outline' ? c.link : c.primaryText;
+  const outlineColor = disabled ? c.border : c.link;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [s.button, { backgroundColor: bg, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 },
-        variant === 'outline' && { borderWidth: 1, borderColor: C.primary }, style]}>
-      <Text style={[s.buttonText, variant === 'outline' && { color: C.primary }]}>{title}</Text>
+      style={(state) => [
+        s.button,
+        {
+          backgroundColor,
+          borderWidth: variant === 'outline' ? 1 : 0,
+          borderColor: variant === 'outline' ? outlineColor : 'transparent',
+        },
+        disabled ? null : pressFeedback(state, c),
+        style,
+      ]}>
+      <Text style={[s.buttonText, { color }]}>{title}</Text>
     </Pressable>
   );
 }
 
-export function Field({ label: fieldLabel, error, ...props }: TextInputProps & { label: string; error?: string }) {
+export const Field = forwardRef<TextInputInstance, TextInputProps & { label: string; error?: string; hint?: string }>(function Field(
+  { label: fieldLabel, error, hint, style, accessibilityLabel, accessibilityHint, ...props },
+  ref,
+) {
+  const { c, s } = useTheme();
   return (
-    <View style={{ marginBottom: 14 }}>
-      <Text style={s.fieldLabel}>{fieldLabel}</Text>
+    <View style={s.field}>
+      <View style={s.fieldHeader}>
+        <Text style={s.fieldLabel}>{fieldLabel}</Text>
+        {hint ? <Text style={s.hint}>{hint}</Text> : null}
+      </View>
       <TextInput
-        placeholderTextColor="#9ca3af"
+        ref={ref}
+        placeholderTextColor={c.placeholder}
+        accessibilityLabel={accessibilityLabel ?? fieldLabel}
+        accessibilityHint={error ?? accessibilityHint}
         {...props}
-        style={[s.input, props.multiline && { minHeight: 100, textAlignVertical: 'top' }, error && { borderColor: C.danger }]}
+        style={[s.input, props.multiline && s.inputMultiline, error ? { borderColor: c.danger } : null, style]}
       />
-      {error ? <Text style={s.error}>{error}</Text> : null}
+      {error ? (
+        <Text style={s.error} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
-}
+});
 
 export function DemoBanner() {
+  const { s } = useTheme();
   return (
-    <View style={s.demo}>
+    <View style={s.demo} accessibilityRole="text" accessibilityLabel="Demo mode. Local mock data, no Supabase project connected.">
       <Text style={s.demoText}>DEMO MODE · local mock data, no Supabase project connected</Text>
     </View>
   );
 }
 
-export const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.bg },
-  card: { backgroundColor: C.card, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: C.border },
-  h1: { fontSize: 22, fontWeight: '700', color: C.text },
-  h2: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 8 },
-  body: { fontSize: 15, color: C.text, lineHeight: 21 },
-  muted: { fontSize: 13, color: C.muted },
-  row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  badge: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  chip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  chipText: { fontSize: 13, color: C.text, fontWeight: '500' },
-  button: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: C.text, marginBottom: 6 },
-  input: { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 12, fontSize: 15, color: C.text },
-  error: { color: C.danger, fontSize: 12, marginTop: 4 },
-  demo: { backgroundColor: '#fef3c7', borderBottomWidth: 1, borderColor: '#f59e0b', paddingVertical: 6, paddingHorizontal: 12 },
-  demoText: { color: '#92400e', fontSize: 12, fontWeight: '700', textAlign: 'center' },
-});
+export function EmptyState({ title, body, children }: { title: string; body?: string; children?: React.ReactNode }) {
+  const { s } = useTheme();
+  return (
+    <View style={s.empty}>
+      <Text style={[s.h2, s.center]}>{title}</Text>
+      {body ? <Text style={[s.muted, s.center]}>{body}</Text> : null}
+      {children}
+    </View>
+  );
+}
+
+/** RN 0.88's TextInput instance type omits focus(), which the native node still implements. */
+export function focusField(ref: React.RefObject<TextInputInstance | null>) {
+  (ref.current as { focus?: () => void } | null)?.focus?.();
+}
+
+export type { Palette };

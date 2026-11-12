@@ -65,6 +65,30 @@ describe('DataProvider (demo mode)', () => {
     expect(after[after.length - 1].body).toBe('Adapter swapped.');
   });
 
+  it('signs in a known demo email and rejects an unknown one', async () => {
+    const { result } = await setup();
+    await act(async () => {
+      await result.current.signIn('  Sam.Tech@example.com ', 'secret12');
+    });
+    expect(result.current.user?.role).toBe('technician');
+    await act(async () => {
+      await result.current.signOut();
+    });
+    await expect(
+      act(async () => {
+        await result.current.signIn('nobody@example.com', 'secret12');
+      }),
+    ).rejects.toThrow(/demo account/);
+    expect(result.current.user).toBeNull();
+  });
+
+  it('rejects a comment that would fail the database check', async () => {
+    const { result } = await setup();
+    await act(async () => result.current.demoSignIn('technician'));
+    await expect(result.current.addComment(1041, 'x'.repeat(2001))).rejects.toThrow(/2,000/);
+    expect(await result.current.getComments(1041)).toHaveLength(2);
+  });
+
   it('signs out', async () => {
     const { result } = await setup();
     await act(async () => result.current.demoSignIn('admin'));

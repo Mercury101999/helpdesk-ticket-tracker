@@ -45,4 +45,4 @@ export interface NewTicketInput {
 }
 
 export const isStaff = (p: Profile | null) => !!p && (p.role === 'technician' || p.role === 'admin');
-export const label = (s: string) => s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+export const label = (value: string) => value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());

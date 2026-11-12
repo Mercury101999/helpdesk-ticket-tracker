@@ -12,16 +12,15 @@ export default function Root({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-
-        {/*
-          Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
-          However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line.
-        */}
+        <title>IT Help Desk Ticket Tracker</title>
+        <meta
+          name="description"
+          content="Submit, triage, and resolve IT support tickets. Try the demo as a requester, technician, or admin — no sign-up required."
+        />
+        <meta name="theme-color" content="#f4f6fb" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)" />
         <ScrollViewStyleReset />
-
-        {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
-        {/* Add any additional <head> elements that you want globally available on web... */}
       </head>
       <body>{children}</body>
     </html>
@@ -30,10 +29,19 @@ export default function Root({ children }: { children: ReactNode }) {
 
 const responsiveBackground = `
 body {
-  background-color: #fff;
+  background-color: #e8edf5;
 }
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #000;
+    background-color: #0b0f14;
   }
-}`;
+}
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px;
+}
+`;

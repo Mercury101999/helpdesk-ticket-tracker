@@ -1,14 +1,21 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
-import { C } from '@/components/ui';
+import { useTheme } from '@/components/ThemeProvider';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
 export default function TabLayout() {
+  const { c } = useTheme();
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: C.primary,
+        tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.muted,
+        tabBarStyle: { backgroundColor: c.card, borderTopColor: c.border },
+        headerStyle: { backgroundColor: c.card },
+        headerTintColor: c.text,
+        headerTitleStyle: { fontWeight: '600' },
+        headerShadowVisible: false,
         // Disable the static render of the header on web to prevent a hydration error.
         headerShown: useClientOnlyValue(false, true),
       }}>
