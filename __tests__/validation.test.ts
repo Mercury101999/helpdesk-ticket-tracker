@@ -1,4 +1,4 @@
-import { isValidEmail, validateTicket } from '@/lib/validation';
+import { isValidEmail, validateComment, validateSignIn, validateSignUp, validateTicket } from '@/lib/validation';
 import { NewTicketInput } from '@/lib/types';
 
 const valid: NewTicketInput = {
@@ -34,6 +34,38 @@ describe('validateTicket', () => {
 
   it('reports every invalid field at once', () => {
     expect(Object.keys(validateTicket({ ...valid, title: '', description: '' })).sort()).toEqual(['description', 'title']);
+  });
+});
+
+describe('validateSignIn', () => {
+  it('reports email and password together', () => {
+    expect(validateSignIn('not-an-email', 'short')).toEqual({
+      email: 'Enter a valid email address.',
+      password: 'Password must be at least 6 characters.',
+    });
+  });
+
+  it('accepts a usable sign-in', () => {
+    expect(validateSignIn(' sam@example.com ', 'secret')).toEqual({});
+  });
+});
+
+describe('validateSignUp', () => {
+  it('requires a name, a real email, and 8 characters', () => {
+    expect(Object.keys(validateSignUp('A', 'nope', 'short')).sort()).toEqual(['email', 'name', 'password']);
+  });
+
+  it('accepts a complete sign-up', () => {
+    expect(validateSignUp('Ada Lovelace', 'ada@example.com', 'long-enough')).toEqual({});
+  });
+});
+
+describe('validateComment', () => {
+  it('requires text and caps the length at the database check', () => {
+    expect(validateComment('   ')).toMatch(/before posting/);
+    expect(validateComment('x'.repeat(2001))).toMatch(/2,000/);
+    expect(validateComment('  Adapter swapped.  ')).toBeUndefined();
+    expect(validateComment('x'.repeat(2000))).toBeUndefined();
   });
 });
 

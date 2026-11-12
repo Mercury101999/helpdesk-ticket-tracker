@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import NewTicket from '@/app/(tabs)/new';
+import Profile from '@/app/(tabs)/profile';
 import TicketList from '@/app/(tabs)/index';
 import SignIn from '@/app/sign-in';
 import { DataProvider, useData } from '@/lib/DataProvider';
@@ -54,9 +55,28 @@ describe('TicketList screen', () => {
     await renderAs('technician', <TicketList />);
     expect(await screen.findByText(/All tickets \(technician view\) · 7 total/)).toBeTruthy();
     expect(screen.getByText('VPN disconnects every 10 minutes')).toBeTruthy();
-    await fireEvent.press(screen.getAllByText('Open')[1]); // [0] is the summary card label, [1] the filter chip
+    await fireEvent.press(screen.getByRole('button', { name: 'Filter status: Open' }));
     expect(screen.queryByText('VPN disconnects every 10 minutes')).toBeNull();
     expect(screen.getByText('Cannot connect to office Wi-Fi')).toBeTruthy();
+  });
+
+  it('filters from the status summary and can clear it', async () => {
+    await renderAs('technician', <TicketList />);
+    await screen.findByText(/All tickets \(technician view\)/);
+    await fireEvent.press(screen.getByRole('button', { name: /3 Open/ }));
+    expect(screen.queryByText('VPN disconnects every 10 minutes')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByText('VPN disconnects every 10 minutes')).toBeTruthy();
+  });
+});
+
+describe('Profile screen', () => {
+  it('shows the signed-in requester, permissions, and appearance control', async () => {
+    await renderAs('requester', <Profile />);
+    expect(await screen.findByText('Alex Rivera')).toBeTruthy();
+    expect(screen.getByText(/see and comment on tickets you submitted/)).toBeTruthy();
+    expect(screen.getByText('Appearance')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Appearance: System' })).toBeTruthy();
   });
 });
 

@@ -1,6 +1,7 @@
 import { CATEGORIES, NewTicketInput, PRIORITIES } from './types';
 
 export type TicketErrors = Partial<Record<keyof NewTicketInput, string>>;
+export type AuthErrors = Partial<Record<'name' | 'email' | 'password', string>>;
 
 /** Mirrors the CHECK constraints in the SQL migration so users get errors before a round trip. */
 export function validateTicket(input: NewTicketInput): TicketErrors {
@@ -16,3 +17,26 @@ export function validateTicket(input: NewTicketInput): TicketErrors {
 }
 
 export const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+export function validateSignIn(email: string, password: string): AuthErrors {
+  const errors: AuthErrors = {};
+  if (!isValidEmail(email)) errors.email = 'Enter a valid email address.';
+  if (password.length < 6) errors.password = 'Password must be at least 6 characters.';
+  return errors;
+}
+
+export function validateSignUp(name: string, email: string, password: string): AuthErrors {
+  const errors: AuthErrors = {};
+  if (name.trim().length < 2) errors.name = 'Enter your full name.';
+  if (!isValidEmail(email)) errors.email = 'Enter a valid email address.';
+  if (password.length < 8) errors.password = 'Password must be at least 8 characters.';
+  return errors;
+}
+
+/** Mirrors the ticket_comments body CHECK (1–2000 characters). */
+export function validateComment(body: string): string | undefined {
+  const text = body.trim();
+  if (text.length < 1) return 'Write a comment before posting.';
+  if (text.length > 2000) return 'Comments must be 2,000 characters or fewer.';
+  return undefined;
+}
